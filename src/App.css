@@ -489,3 +489,51 @@ body {
     transform: translateX(120vw);
   }
 }
+
+/* --- DARK/LIGHT MODE AUTOMATICO --- */
+.dark-mode .card {
+  background: rgba(15, 23, 42, 0.85);
+  /* Blu notte profondo */
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.light-mode .card {
+  background: rgba(255, 255, 255, 0.1);
+  /* Più trasparente per il giorno */
+}
+
+/* --- PULSANTE GEOLOCALIZZAZIONE --- */
+.geo-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  font-size: 18px;
+  padding: 0 12px !important;
+  border-radius: 14px;
+}
+
+/* --- GRAFICO --- */
+.chart-container {
+  margin: 20px 0;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 15px;
+  border-radius: 20px;
+}
+
+/* --- MOBILE "APP-LIKE" --- */
+@media (max-width: 480px) {
+  .app {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .card {
+    height: 94vh;
+    border-radius: 35px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .temp {
+    font-size: 80px;
+  }
+}
