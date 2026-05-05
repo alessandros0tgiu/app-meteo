@@ -519,21 +519,53 @@ body {
 }
 
 /* --- MOBILE "APP-LIKE" --- */
+/* --- MOBILE "APP-LIKE" RESPONSIVE --- */
 @media (max-width: 480px) {
   .app {
     padding: 10px;
     align-items: flex-start;
-  }
-
-  .card {
-    height: 94vh;
-    border-radius: 35px;
-    display: flex;
-    flex-direction: column;
+    /* Evita tagli su schermi bassi */
     overflow-y: auto;
   }
 
+  .card {
+    min-height: 92vh;
+    /* Quasi intero schermo */
+    border-radius: 30px;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
   .temp {
-    font-size: 80px;
+    font-size: 70px;
+    /* Ridimensionata per non uscire dai bordi */
+  }
+
+  .search input {
+    font-size: 14px;
+    /* Evita lo zoom automatico su iOS */
+    padding: 12px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .box {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .forecast-card {
+    min-width: 85px;
+  }
+
+  /* Assicura che il grafico sia visibile */
+  .chart-container {
+    padding: 10px;
+    margin: 15px 0;
   }
 }

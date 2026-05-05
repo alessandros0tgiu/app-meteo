@@ -170,7 +170,6 @@ export default function App() {
             <p className="temp">{Math.round(weather.temp)}°C</p>
             <p className="condition-text">{weather.condition}</p>
 
-            {/* 📊 GRAFICO TEMPERATURE ORARIE */}
             <div className="chart-container">
               <ResponsiveContainer width="100%" height={100}>
                 <AreaChart data={hourly.filter((_, i) => i % 2 === 0)}>
@@ -211,7 +210,7 @@ export default function App() {
 
             <div className="forecast">
               <h3>📅 7 Giorni</h3>
-              <div className="forecast-grid">
+              <div className="forecast-grid scrollable-x">
                 {forecast.map((d, i) => (
                   <div key={i} className="forecast-card">
                     <p>{new Date(d.date).toLocaleDateString("it-IT", { weekday: "short" })}</p>
