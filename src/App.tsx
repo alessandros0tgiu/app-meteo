@@ -1,0 +1,316 @@
+import { useState, useEffect } from "react"
+import "./App.css"
+
+const API_KEY = import.meta.env.VITE_WEATHER_API_KEY
+
+// --- TYPES ---
+type Weather = {
+  name: string
+  region: string
+  country: string
+  lat: number
+  lon: number
+  timezone: string
+  localtime: string
+  temp: number
+  temp_f: number
+  condition: string
+  icon: string
+  feelslike: number
+  wind: number
+  wind_dir: string
+  humidity: number
+  pressure: number
+  precip: number
+  uv: number
+  visibility: number
+  is_day: number
+}
+
+type ForecastDay = {
+  date: string
+  max: number
+  min: number
+  condition: string
+}
+
+type HourlyForecast = {
+  time: string
+  temp: number
+  condition: string
+}
+
+export default function App() {
+  const [city, setCity] = useState("")
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [weather, setWeather] = useState<Weather | null>(null)
+  const [forecast, setForecast] = useState<ForecastDay[]>([])
+  const [hourly, setHourly] = useState<HourlyForecast[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  // Pulisce l'errore quando l'utente ricomincia a scrivere
+  useEffect(() => {
+    if (city.length > 0) setError("");
+  }, [city]);
+
+  // 🌤 ICONA METEO PERSONALIZZATA
+  const getIcon = (text: string) => {
+    const c = text.toLowerCase()
+    if (c.includes("thunder") || c.includes("storm") || c.includes("temporale")) return "⛈️"
+    if (c.includes("snow") || c.includes("neve")) return "❄️"
+    if (c.includes("rain") || c.includes("pioggia") || c.includes("drizzle")) return "🌧️"
+    if (c.includes("cloud") || c.includes("nuvol")) return "☁️"
+    if (c.includes("sun") || c.includes("clear") || c.includes("sereno")) return "☀️"
+    if (c.includes("mist") || c.includes("fog") || c.includes("nebbia")) return "🌫️"
+    if (c.includes("partly")) return "🌤️"
+    return "🌤️"
+  }
+
+  // --- EFFETTI VISIVI (Sfondi animati) ---
+  const Rain = () => (
+    <div className="rain-container">
+      {Array.from({ length: 80 }).map((_, i) => (
+        <span
+          key={i}
+          className="raindrop"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${0.4 + Math.random()}s`,
+            opacity: Math.random()
+          }}
+        />
+      ))}
+    </div>
+  )
+
+  const Lightning = () => <div className="lightning" />
+  const SunGlow = () => <div className="sun-glow" />
+  const Clouds = () => (
+    <div className="clouds-container">
+      <div className="cloud c1"></div>
+      <div className="cloud c2"></div>
+      <div className="cloud c3"></div>
+    </div>
+  )
+
+  // --- LOGICA CONDIZIONI PER SFONDO ---
+  const condition = weather?.condition?.toLowerCase() || ""
+  const isRaining = condition.includes("rain") || condition.includes("pioggia") || condition.includes("drizzle")
+  const isStorm = condition.includes("thunder") || condition.includes("storm") || condition.includes("temporale")
+  const isCloudy = condition.includes("cloud") || condition.includes("nuvol") || condition.includes("overcast")
+  const isBadWeather = isRaining || isStorm || condition.includes("snow")
+  const isSunny = Number(weather?.is_day) === 1 && !isBadWeather && (condition.includes("sun") || condition.includes("clear") || condition.includes("sereno"))
+
+  // --- AUTOCOMPLETE SUGGESTIONS ---
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (city.length < 2) return setSuggestions([])
+      try {
+        const res = await fetch(`https://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${city}`)
+        const data = await res.json()
+        setSuggestions(data.map((item: any) => `${item.name}, ${item.country}`))
+      } catch {
+        setSuggestions([])
+      }
+    }
+    const t = setTimeout(fetchSuggestions, 300)
+    return () => clearTimeout(t)
+  }, [city])
+
+  // --- FETCH DATI METEO (MODIFICATA PER FIX BUG ERRORE) ---
+  const getWeather = async (selectedCity: string) => {
+    const query = selectedCity.trim();
+
+    // Controllo immediato: se la query è vuota, mostra errore e ferma l'esecuzione
+    if (!query) {
+      setError("Specificare una località per visualizzare i dati meteorologici.");
+      setWeather(null); 
+      return;
+    }
+
+    try {
+      setLoading(true)
+      setError("")
+      setSuggestions([])
+
+      const res = await fetch(
+        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(query.split(",")[0])}&days=7&lang=it`
+      )
+      const data = await res.json()
+
+      if (!res.ok || data.error) throw new Error("Località non trovata. Riprova con un nome diverso.")
+
+      setWeather({
+        name: data.location.name,
+        region: data.location.region,
+        country: data.location.country,
+        lat: data.location.lat,
+        lon: data.location.lon,
+        timezone: data.location.tz_id,
+        localtime: data.location.localtime,
+        temp: data.current.temp_c,
+        temp_f: data.current.temp_f,
+        condition: data.current.condition.text,
+        icon: data.current.condition.icon,
+        feelslike: data.current.feelslike_c,
+        wind: data.current.wind_kph,
+        wind_dir: data.current.wind_dir,
+        humidity: data.current.humidity,
+        pressure: data.current.pressure_mb,
+        precip: data.current.precip_mm,
+        uv: data.current.uv,
+        visibility: data.current.vis_km,
+        is_day: data.current.is_day
+      })
+
+      setForecast(
+        data.forecast.forecastday.map((d: any) => ({
+          date: d.date,
+          max: d.day.maxtemp_c,
+          min: d.day.mintemp_c,
+          condition: d.day.condition.text
+        }))
+      )
+
+      setHourly(
+        data.forecast.forecastday[0].hour.map((h: any) => ({
+          time: h.time,
+          temp: h.temp_c,
+          condition: h.condition.text
+        }))
+      )
+
+      setCity("") // Pulisce l'input dopo il caricamento dati
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getType = () => {
+    if (!weather) return "clear"
+    if (isStorm) return "rain"
+    const c = weather.condition.toLowerCase()
+    if (c.includes("rain")) return "rain"
+    if (c.includes("cloud")) return "clouds"
+    if (c.includes("snow")) return "snow"
+    return "clear"
+  }
+
+  return (
+    <div className={`app ${getType()}`}>
+      {isSunny && <SunGlow />}
+      {isCloudy && !isRaining && <Clouds />}
+      {(isRaining || isStorm) && <Rain />}
+      {isStorm && <Lightning />}
+
+      <div className="card">
+        <h1 className="title">🌤 Meteo</h1>
+
+        <div className="search">
+          <input
+            className={error ? "input-error" : ""}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Cerca una città..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                getWeather(city); // Chiama con il valore attuale dell'input
+              }
+            }}
+          />
+          <button onClick={() => getWeather(city)}>
+            Cerca
+          </button>
+        </div>
+
+        {suggestions.length > 0 && (
+          <div className="suggestions">
+            {suggestions.map((s, i) => (
+              <div key={i} onClick={() => { setCity(s); getWeather(s); }}>
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div className="error-container">
+            <div className="error-content">
+              <span className="error-icon">⚡</span>
+              <p>{error}</p>
+            </div>
+            <div className="error-bar"></div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="status-container">
+            <div className="spinner"></div>
+            <p>Recupero dati...</p>
+          </div>
+        )}
+
+        {!weather && !loading && !error && (
+          <div className="welcome-view">
+            <div className="welcome-icon">🌍</div>
+            <h2>Ciao!</h2>
+            <p>Inserisci una città per scoprire il meteo in tempo reale.</p>
+          </div>
+        )}
+
+        {weather && !loading && (
+          <div className="weather">
+            <h2>{weather.name}</h2>
+            <img src={`https:${weather.icon}`} width={80} alt="icon" />
+            <p className="temp">{Math.round(weather.temp)}°C</p>
+            <p className="condition-text">{weather.condition}</p>
+            <p>Percepita: {Math.round(weather.feelslike)}°C</p>
+
+            <div className="grid">
+              <div className="box">💨 {weather.wind} km/h</div>
+              <div className="box">🧭 {weather.wind_dir}</div>
+              <div className="box">💧 {weather.humidity}%</div>
+              <div className="box">🌧 {weather.precip} mm</div>
+              <div className="box">☀️ UV {weather.uv}</div>
+              <div className="box">👁 {weather.visibility} km</div>
+              <div className="box">🌡 {weather.pressure} mb</div>
+              <div className="box">
+                {Number(weather.is_day) === 1 ? "☀️ Giorno" : "🌙 Notte"}
+              </div>
+            </div>
+
+            <div className="forecast">
+              <h3>🕐 Prossime ore</h3>
+              <div className="forecast-grid scrollable-x">
+                {hourly.slice(0, 24).map((h, i) => (
+                  <div key={i} className="forecast-card small">
+                    <p>{new Date(h.time).getHours()}:00</p>
+                    <div style={{ fontSize: "20px" }}>{getIcon(h.condition)}</div>
+                    <p>{Math.round(h.temp)}°</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="forecast">
+              <h3>📅 7 Giorni</h3>
+              <div className="forecast-grid">
+                {forecast.map((d, i) => (
+                  <div key={i} className="forecast-card">
+                    <p>{new Date(d.date).toLocaleDateString("it-IT", { weekday: "short" })}</p>
+                    <div style={{ fontSize: "26px" }}>{getIcon(d.condition)}</div>
+                    <p className="small-text">{d.condition}</p>
+                    <p><strong>{Math.round(d.max)}°</strong> / {Math.round(d.min)}°</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
