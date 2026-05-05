@@ -159,8 +159,6 @@ export default function App() {
 
         {!weather && !loading && !error && (
           <div className="welcome-view">
-            <div className="welcome-icon">🌍</div>
-            <h2>Ciao!</h2>
             <p>Inserisci una città o usa la tua posizione per scoprire il meteo.</p>
           </div>
         )}
