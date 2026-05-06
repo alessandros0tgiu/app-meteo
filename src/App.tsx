@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react"
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import "./App.css"
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { WeatherEffects } from "./WeatherEffects";
+import { WeatherChart } from "./WeatherChart";
+import "./App.css";
+import "./i18n"; 
 
-const API_KEY = import.meta.env.VITE_WEATHER_API_KEY
+const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 
 // --- TYPES ---
 type Weather = {
@@ -16,31 +19,44 @@ type ForecastDay = { date: string; max: number; min: number; condition: string; 
 type HourlyForecast = { time: string; temp: number; condition: string; }
 
 export default function App() {
-  const [city, setCity] = useState("")
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [weather, setWeather] = useState<Weather | null>(null)
-  const [forecast, setForecast] = useState<ForecastDay[]>([])
-  const [hourly, setHourly] = useState<HourlyForecast[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const { t, i18n } = useTranslation();
+  
+  const [city, setCity] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [weather, setWeather] = useState<Weather | null>(null);
+  const [forecast, setForecast] = useState<ForecastDay[]>([]);
+  const [hourly, setHourly] = useState<HourlyForecast[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isShake, setIsShake] = useState(false);
 
+  // Torna alla schermata iniziale (Home)
+  const goHome = () => {
+    setWeather(null);
+    setForecast([]);
+    setHourly([]);
+    setCity("");
+    setError("");
+  };
+
+  // Aggiorna i dati quando cambia la lingua
   useEffect(() => {
-    if (city.length > 0) setError("");
-  }, [city]);
+    if (weather?.name) {
+      getWeather(weather.name, true);
+    }
+  }, [i18n.language]);
 
-  // 🌤 ICONA METEO PERSONALIZZATA (Emoji)
   const getIcon = (text: string) => {
-    const c = text.toLowerCase()
-    if (c.includes("thunder") || c.includes("storm") || c.includes("temporale")) return "⛈️"
-    if (c.includes("snow") || c.includes("neve")) return "❄️"
-    if (c.includes("rain") || c.includes("pioggia") || c.includes("drizzle")) return "🌧️"
-    if (c.includes("cloud") || c.includes("nuvol")) return "☁️"
-    if (c.includes("sun") || c.includes("clear") || c.includes("sereno")) return "☀️"
-    if (c.includes("mist") || c.includes("fog") || c.includes("nebbia")) return "🌫️"
-    return "🌤️"
-  }
+    const c = text.toLowerCase();
+    if (c.includes("thunder") || c.includes("storm") || c.includes("temporale")) return "⛈️";
+    if (c.includes("snow") || c.includes("neve")) return "❄️";
+    if (c.includes("rain") || c.includes("pioggia") || c.includes("drizzle")) return "🌧️";
+    if (c.includes("cloud") || c.includes("nuvol") || c.includes("overcast") || c.includes("coperto")) return "☁️";
+    if (c.includes("sun") || c.includes("clear") || c.includes("sereno") || c.includes("sole")) return "☀️";
+    if (c.includes("mist") || c.includes("fog") || c.includes("nebbia")) return "🌫️";
+    return "🌤️";
+  };
 
-  // --- 📍 GEOLOCALIZZAZIONE ---
   const getMyLocation = () => {
     if (!navigator.geolocation) return setError("Geolocalizzazione non supportata");
     setLoading(true);
@@ -50,48 +66,39 @@ export default function App() {
     );
   };
 
-  // --- EFFETTI VISIVI (Sfondi animati) ---
-  const Rain = () => (
-    <div className="rain-container">
-      {Array.from({ length: 80 }).map((_, i) => (
-        <span key={i} className="raindrop" style={{ left: `${Math.random() * 100}%`, animationDuration: `${0.4 + Math.random()}s`, opacity: Math.random() }} />
-      ))}
-    </div>
-  )
-  const Lightning = () => <div className="lightning" />
-  const SunGlow = () => <div className="sun-glow" />
-  const Clouds = () => (
-    <div className="clouds-container"><div className="cloud c1"></div><div className="cloud c2"></div><div className="cloud c3"></div></div>
-  )
-
-  const condition = weather?.condition?.toLowerCase() || ""
-  const isRaining = condition.includes("rain") || condition.includes("pioggia")
-  const isStorm = condition.includes("thunder") || condition.includes("storm")
-  const isCloudy = condition.includes("cloud") || condition.includes("nuvol")
-  const isBadWeather = isRaining || isStorm || condition.includes("snow")
-  const isSunny = Number(weather?.is_day) === 1 && !isBadWeather && (condition.includes("sun") || condition.includes("clear"))
-
-  // --- AUTOCOMPLETE ---
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (city.length < 2) return setSuggestions([])
+      if (city.length < 2) return setSuggestions([]);
       try {
-        const res = await fetch(`https://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${city}`)
-        const data = await res.json()
-        setSuggestions(data.map((item: any) => `${item.name}, ${item.country}`))
-      } catch { setSuggestions([]) }
-    }
-    const t = setTimeout(fetchSuggestions, 300); return () => clearTimeout(t)
-  }, [city])
+        const res = await fetch(`https://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${city}`);
+        const data = await res.json();
+        setSuggestions(data.map((item: any) => `${item.name}, ${item.country}`));
+      } catch { setSuggestions([]); }
+    };
+    const tId = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(tId);
+  }, [city]);
 
-  const getWeather = async (selectedCity: string) => {
+  const getWeather = async (selectedCity: string, isSilent = false) => {
     const query = selectedCity.trim();
-    if (!query) { setError("Specificare una località."); return; }
+    
+    // Errore se l'input è vuoto
+    if (!query && !isSilent) {
+      setError(i18n.language.startsWith('it') ? "Inserisci una città!" : "Enter a city!");
+      setIsShake(true);
+      setTimeout(() => setIsShake(false), 400);
+      return;
+    }
+
+    if (!query) return;
+    const currentLang = i18n.language.split('-')[0];
+
     try {
-      setLoading(true); setError(""); setSuggestions([]);
-      const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(query)}&days=7&lang=it`);
+      if (!isSilent) setLoading(true);
+      setError("");
+      const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(query)}&days=7&lang=${currentLang}`);
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error("Località non trovata.");
+      if (!res.ok || data.error) throw new Error(t("error_location"));
 
       setWeather({
         name: data.location.name, region: data.location.region, country: data.location.country,
@@ -103,47 +110,69 @@ export default function App() {
         precip: data.current.precip_mm, uv: data.current.uv, visibility: data.current.vis_km,
         is_day: data.current.is_day
       });
-
       setForecast(data.forecast.forecastday.map((d: any) => ({
         date: d.date, max: d.day.maxtemp_c, min: d.day.mintemp_c, condition: d.day.condition.text
       })));
-
       setHourly(data.forecast.forecastday[0].hour.map((h: any) => ({
         time: h.time, temp: h.temp_c, condition: h.condition.text
       })));
-      setCity("");
+      if (!isSilent) {
+        setCity("");
+        setSuggestions([]);
+      }
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
-  }
+  };
+
+  // --- LOGICA CONDIZIONI PER EFFETTI ---
+  const condition = weather?.condition?.toLowerCase() || "";
+  const isRaining = condition.includes("rain") || condition.includes("pioggia") || condition.includes("drizzle");
+  const isStorm = condition.includes("thunder") || condition.includes("storm") || condition.includes("temporale");
+  const isSnowing = condition.includes("snow") || condition.includes("neve");
+  const isCloudy = condition.includes("cloud") || condition.includes("nuvol") || condition.includes("overcast") || condition.includes("coperto");
+  
+  const isBadWeather = isRaining || isStorm || isSnowing;
+
+  // Fix Madrid: il sole appare se è giorno, non piove/nevica e la stringa contiene termini di "sereno" (IT/EN)
+  const isSunny = Number(weather?.is_day) === 1 && 
+                  !isBadWeather && 
+                  (condition.includes("sun") || condition.includes("clear") || condition.includes("sereno") || condition.includes("sole"));
 
   const getType = () => {
-    if (!weather) return "clear"
-    if (isStorm) return "rain"
-    if (condition.includes("rain")) return "rain"
-    if (condition.includes("cloud")) return "clouds"
-    if (condition.includes("snow")) return "snow"
-    return "clear"
-  }
+    if (!weather) return "clear";
+    if (isStorm || isRaining) return "rain";
+    if (isCloudy) return "clouds";
+    if (isSnowing) return "snow";
+    return "clear";
+  };
 
   return (
     <div className={`app ${getType()} ${weather?.is_day === 0 ? 'dark-mode' : 'light-mode'}`}>
-      {isSunny && <SunGlow />}
-      {isCloudy && !isRaining && <Clouds />}
-      {(isRaining || isStorm) && <Rain />}
-      {isStorm && <Lightning />}
+      <WeatherEffects isSunny={isSunny} isCloudy={isCloudy} isRaining={isRaining} isStorm={isStorm} />
 
       <div className="card">
-        <h1 className="title">🌤 Meteo</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h1 className="title" onClick={goHome} style={{ margin: 0, cursor: 'pointer' }}>
+            {t("title")}
+          </h1>
+          <div className="lang-switcher">
+            <button onClick={() => i18n.changeLanguage('it')} style={{ fontWeight: i18n.language.startsWith('it') ? 'bold' : 'normal' }}>IT</button>
+            <button onClick={() => i18n.changeLanguage('en')} style={{ fontWeight: i18n.language.startsWith('en') ? 'bold' : 'normal' }}>EN</button>
+          </div>
+        </div>
 
-        <div className="search">
-          <button className="geo-btn" onClick={getMyLocation} title="Usa la mia posizione">📍</button>
+        <div className={`search ${isShake ? 'shake' : ''}`}>
+          <button className="geo-btn" onClick={getMyLocation}>📍</button>
           <input
             className={error ? "input-error" : ""}
             value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Cerca una città..."
+            onChange={(e) => {
+              setCity(e.target.value);
+              if(error) setError("");
+            }}
+            placeholder={t("search_placeholder")}
             onKeyDown={(e) => e.key === "Enter" && getWeather(city)}
           />
-          <button onClick={() => getWeather(city)}>Cerca</button>
+          <button onClick={() => getWeather(city)}>{t("search_btn")}</button>
         </div>
 
         {suggestions.length > 0 && (
@@ -155,11 +184,11 @@ export default function App() {
         )}
 
         {error && <div className="error-container"><div className="error-content"><span>⚡</span><p>{error}</p></div></div>}
-        {loading && <div className="status-container"><div className="spinner"></div><p>Recupero dati...</p></div>}
+        {loading && <div className="status-container"><div className="spinner"></div><p>{t("loading")}</p></div>}
 
         {!weather && !loading && !error && (
-          <div className="welcome-view">
-            <p>Inserisci una città o usa la tua posizione per scoprire il meteo.</p>
+          <div className="welcome-view" style={{ textAlign: 'center', padding: '20px' }}>
+             <p style={{ opacity: 0.8 }}>{t("welcome_msg")}</p>
           </div>
         )}
 
@@ -170,33 +199,17 @@ export default function App() {
             <p className="temp">{Math.round(weather.temp)}°C</p>
             <p className="condition-text">{weather.condition}</p>
 
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={100}>
-                <AreaChart data={hourly.filter((_, i) => i % 2 === 0)}>
-                  <defs>
-                    <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '10px', fontSize: '12px' }} />
-                  <Area type="monotone" dataKey="temp" stroke="var(--accent)" fill="url(#colorTemp)" strokeWidth={3} />
-                  <XAxis dataKey="time" hide />
-                  <YAxis hide domain={['dataMin - 3', 'dataMax + 3']} />
-                </AreaChart>
-              </ResponsiveContainer>
-              <p className="chart-label">Andamento oggi</p>
-            </div>
+            <WeatherChart hourlyData={hourly} />
 
             <div className="grid">
               <div className="box">💨 {weather.wind} km/h</div>
               <div className="box">💧 {weather.humidity}%</div>
               <div className="box">☀️ UV {weather.uv}</div>
-              <div className="box">{weather.is_day === 1 ? "☀️ Giorno" : "🌙 Notte"}</div>
+              <div className="box">{weather.is_day === 1 ? t("day") : t("night")}</div>
             </div>
 
             <div className="forecast">
-              <h3>🕐 Prossime ore</h3>
+              <h3>{t("next_hours")}</h3>
               <div className="forecast-grid scrollable-x">
                 {hourly.slice(0, 24).map((h, i) => (
                   <div key={i} className="forecast-card small">
@@ -209,11 +222,11 @@ export default function App() {
             </div>
 
             <div className="forecast">
-              <h3>📅 7 Giorni</h3>
+              <h3>{t("seven_days")}</h3>
               <div className="forecast-grid scrollable-x">
                 {forecast.map((d, i) => (
                   <div key={i} className="forecast-card">
-                    <p>{new Date(d.date).toLocaleDateString("it-IT", { weekday: "short" })}</p>
+                    <p>{new Date(d.date).toLocaleDateString(i18n.language, { weekday: "short" })}</p>
                     <div style={{ fontSize: "26px" }}>{getIcon(d.condition)}</div>
                     <p><strong>{Math.round(d.max)}°</strong> / {Math.round(d.min)}°</p>
                   </div>
@@ -224,5 +237,5 @@ export default function App() {
         )}
       </div>
     </div>
-  )
+  );
 }
