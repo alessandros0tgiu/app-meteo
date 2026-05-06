@@ -30,7 +30,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [isShake, setIsShake] = useState(false);
 
-  // Torna alla schermata iniziale (Home)
+  // Torna alla schermata iniziale (Home) 
   const goHome = () => {
     setWeather(null);
     setForecast([]);
