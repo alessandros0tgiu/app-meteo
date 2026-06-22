@@ -110,49 +110,56 @@ body {
   transform: scale(0.95);
 }
 
-/* --- NUOVO DESIGN ERRORE --- */
-.error-container {
-  margin-top: 20px;
-  position: relative;
-  background: linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(248, 113, 113, 0.05));
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: 16px;
-  overflow: hidden;
-  animation: errorShake 0.4s cubic-bezier(.36, .07, .19, .97) both;
-  backdrop-filter: blur(10px);
-}
-
-.error-content {
+/* --- STILI PERSONALIZZATI PER IL MESSAGGIO DI ERRORE --- */
+.error-wrapper {
   display: flex;
-  align-items: center;
-  padding: 16px;
-  gap: 12px;
+  justify-content: center;
+  margin: 12px 0;
 }
 
-.error-icon {
+.error-box {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  width: 320px;
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
+  background: #FCE8DB;
+  border-radius: 8px;
+  border: 1px solid #EF665B;
+  box-shadow: 0px 0px 5px -3px #111;
+}
+
+.error__icon {
+  width: 20px;
+  height: 20px;
+  transform: translateY(-2px);
+  margin-right: 8px;
+}
+
+.error__icon path {
+  fill: #EF665B;
+}
+
+.error__title {
+  font-weight: 500;
   font-size: 14px;
-  background: rgba(248, 113, 113, 0.2);
-  width: 28px;
-  height: 28px;
+  color: #71192F;
+}
+
+.error__close {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: var(--error);
-  flex-shrink: 0;
 }
 
-.error-content p {
-  color: #fca5a5;
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.error-bar {
-  height: 3px;
-  width: 100%;
-  background: rgba(248, 113, 113, 0.4);
+.error__close path {
+  fill: #71192F;
 }
 
 @keyframes errorShake {

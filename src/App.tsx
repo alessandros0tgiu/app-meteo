@@ -58,13 +58,13 @@ export default function App() {
   };
 
   const getMyLocation = () => {
-  if (!navigator.geolocation) return setError("Geolocalizzazione non supportata");
-  setLoading(true); // <--- Controlla qui: deve essere setLoading, non loading
-  navigator.geolocation.getCurrentPosition(
-    (pos) => getWeather(`${pos.coords.latitude},${pos.coords.longitude}`),
-    () => { setError("Permesso negato"); setLoading(false); }
-  );
-};
+    if (!navigator.geolocation) return setError("Geolocalizzazione non supportata");
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => getWeather(`${pos.coords.latitude},${pos.coords.longitude}`),
+      () => { setError("Permesso negato"); setLoading(false); }
+    );
+  };
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -120,7 +120,9 @@ export default function App() {
         setCity("");
         setSuggestions([]);
       }
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      setError(err.message || (i18n.language.startsWith('it') ? "Città non trovata!" : "City not found!")); 
+    } finally { setLoading(false); }
   };
 
   // --- LOGICA CONDIZIONI PER EFFETTI ---
@@ -132,7 +134,6 @@ export default function App() {
   
   const isBadWeather = isRaining || isStorm || isSnowing;
 
-  // Fix Madrid: il sole appare se è giorno, non piove/nevica e la stringa contiene termini di "sereno" (IT/EN)
   const isSunny = Number(weather?.is_day) === 1 && 
                   !isBadWeather && 
                   (condition.includes("sun") || condition.includes("clear") || condition.includes("sereno") || condition.includes("sole"));
@@ -183,12 +184,27 @@ export default function App() {
           </div>
         )}
 
-        {error && <div className="error-container"><div className="error-content"><span>⚡</span><p>{error}</p></div></div>}
+        {/* Messaggio di Errore Custom con Classi CSS Pure */}
+        {error && (
+          <div className="error-wrapper">
+            <div className="error-box">
+              <div className="error__icon">
+                <svg fill="none" height={24} viewBox="0 0 24 24" width={24} xmlns="http://www.w3.org/2000/svg">
+                  <path d="m13 13h-2v-6h2zm0 4h-2v-2h2zm-1-15c-1.3132 0-2.61358.25866-3.82683.7612-1.21326.50255-2.31565 1.23915-3.24424 2.16773-1.87536 1.87537-2.92893 4.41891-2.92893 7.07107 0 2.6522 1.05357 5.1957 2.92893 7.0711.92859.9286 2.03098 1.6651 3.24424 2.1677 1.21325.5025 2.51363.7612 3.82683.7612 2.6522 0 5.1957-1.0536 7.0711-2.9289 1.8753-1.8754 2.9289-4.4189 2.9289-7.0711 0-1.3132-.2587-2.61358-.7612-3.82683-.5026-1.21326-1.2391-2.31565-2.1677-3.24424-.9286-.92858-2.031-1.66518-3.2443-2.16773-1.2132-.50254-2.5136-.7612-3.8268-.7612z" fill="#393a37" />
+                </svg>
+              </div>
+              <div className="error__title">{error}</div>
+              <div className="error__close" onClick={() => setError("")}>
+                <svg height={20} viewBox="0 0 20 20" width={20} xmlns="http://www.w3.org/2000/svg">
+                  <path d="m15.8333 5.34166-1.175-1.175-4.6583 4.65834-4.65833-4.65834-1.175 1.175 4.65833 4.65834-4.65833 4.6583 1.175 1.175 4.65833-4.6583 4.6583 4.6583 1.175-1.175-4.6583-4.6583z" fill="#393a37" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
         
-        {/* Nuovo Loader di Uiverse.io centrato */}
         {loading && (
           <div className="loader-container">
-            {/* From Uiverse.io by Nawsome */}
             <svg className="pl" viewBox="0 0 160 160" width="160px" height="160px" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
@@ -202,7 +218,6 @@ export default function App() {
                   <rect x="28" y="28" width="104" height="104" fill="url(#grad)"></rect>
                 </mask>
               </defs>
-              
               <g>
                 <g className="pl__ring-rotate">
                   <circle className="pl__ring-stroke" cx="80" cy="80" r="72" fill="none" stroke="hsl(223,90%,55%)" strokeWidth="16" strokeDasharray="452.39 452.39" strokeDashoffset="452" strokeLinecap="round" transform="rotate(-45,80,80)"></circle>
@@ -213,7 +228,6 @@ export default function App() {
                   <circle className="pl__ring-stroke" cx="80" cy="80" r="72" fill="none" stroke="hsl(193,90%,55%)" strokeWidth="16" strokeDasharray="452.39 452.39" strokeDashoffset="452" strokeLinecap="round" transform="rotate(-45,80,80)"></circle>
                 </g>
               </g>
-              
               <g>
                 <g strokeWidth="4" strokeDasharray="12 12" strokeDashoffset="12" strokeLinecap="round" transform="translate(80,80)">
                   <polyline className="pl__tick" stroke="hsl(223,10%,90%)" points="0,2 0,14" transform="rotate(-135,0,0) translate(0,40)"></polyline>
@@ -238,7 +252,6 @@ export default function App() {
                   <polyline className="pl__tick" stroke="hsl(223,90%,80%)" points="0,2 0,14" transform="rotate(180,0,0) translate(0,40)"></polyline>
                 </g>
               </g>
-              
               <g>
                 <g transform="translate(64,28)">
                   <g className="pl__arrows" transform="rotate(45,16,52)">
