@@ -7,6 +7,18 @@ import "./i18n";
 
 const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 
+// Mappa i codici meteo WMO usati da Open-Meteo in una descrizione testuale
+// compatibile con getIcon() (che cerca parole come "rain", "cloud", "snow", ecc.)
+const mapOpenMeteoCode = (code: number): string => {
+  if (code === 0) return "Clear";
+  if ([1, 2, 3].includes(code)) return "Cloudy";
+  if ([45, 48].includes(code)) return "Mist";
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
+  if ([95, 96, 99].includes(code)) return "Thunderstorm";
+  return "Cloudy";
+};
+
 // --- TYPES ---
 type Weather = {
   name: string; region: string; country: string; lat: number; lon: number;
@@ -110,9 +122,36 @@ export default function App() {
         precip: data.current.precip_mm, uv: data.current.uv, visibility: data.current.vis_km,
         is_day: data.current.is_day
       });
-      setForecast(data.forecast.forecastday.map((d: any) => ({
+      let forecastDays: ForecastDay[] = data.forecast.forecastday.map((d: any) => ({
         date: d.date, max: d.day.maxtemp_c, min: d.day.mintemp_c, condition: d.day.condition.text
-      })));
+      }));
+
+      // Il piano free di WeatherAPI limita il forecast a 3 giorni: se ne mancano,
+      // li completiamo con Open-Meteo (gratuito, senza key, forecast fino a 16 giorni)
+      if (forecastDays.length < 7) {
+        try {
+          const lat = data.location.lat;
+          const lon = data.location.lon;
+          const omRes = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`
+          );
+          const omData = await omRes.json();
+          const existingDates = new Set(forecastDays.map((d) => d.date));
+          const extraDays: ForecastDay[] = omData.daily.time
+            .map((date: string, i: number) => ({
+              date,
+              max: omData.daily.temperature_2m_max[i],
+              min: omData.daily.temperature_2m_min[i],
+              condition: mapOpenMeteoCode(omData.daily.weathercode[i]),
+            }))
+            .filter((d: ForecastDay) => !existingDates.has(d.date));
+          forecastDays = [...forecastDays, ...extraDays].slice(0, 7);
+        } catch {
+          // Se anche Open-Meteo fallisce, mostriamo comunque i giorni disponibili da WeatherAPI
+        }
+      }
+
+      setForecast(forecastDays);
       setHourly(data.forecast.forecastday[0].hour.map((h: any) => ({
         time: h.time, temp: h.temp_c, condition: h.condition.text
       })));
