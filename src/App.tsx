@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { WeatherEffects } from "./WeatherEffects";
 import { WeatherChart } from "./WeatherChart";

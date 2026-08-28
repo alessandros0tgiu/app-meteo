@@ -44,10 +44,19 @@ body {
   padding: 24px;
   border: 1px solid var(--border);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.5s ease-out, cardGlow 6s ease-in-out infinite;
   position: relative;
   z-index: 10;
   transition: all 0.3s ease;
+}
+
+@keyframes cardGlow {
+  0%, 100% {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 rgba(56, 189, 248, 0);
+  }
+  50% {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 45px rgba(56, 189, 248, 0.18);
+  }
 }
 
 .card:hover {
@@ -71,6 +80,8 @@ body {
   text-align: center;
   font-size: 1.5rem;
   margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 10px;
 }
 
 .search {
@@ -129,6 +140,7 @@ body {
   border-radius: 8px;
   border: 1px solid #EF665B;
   box-shadow: 0px 0px 5px -3px #111;
+  animation: errorShake 0.4s ease-in-out;
 }
 
 .error__icon {
@@ -631,34 +643,8 @@ body {
   font-weight: 500;
 }
 
-/* ... (tuo CSS esistente) ... */
-
 .title:hover {
   opacity: 0.7;
-}
-
-.shake {
-  animation: shake 0.4s ease-in-out;
-}
-
-@keyframes shake {
-
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-5px);
-  }
-
-  50% {
-    transform: translateX(5px);
-  }
-
-  75% {
-    transform: translateX(-5px);
-  }
 }
 
 /* --- CONTAINER LOADER CENTRATO --- */
@@ -774,5 +760,152 @@ body {
   }
   14%, 36% {
     stroke-dashoffset: 0;
+  }
+}
+
+/* --- ICONA METEO FLUTTUANTE --- */
+.weather img {
+  animation: floatIcon 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 14px rgba(56, 189, 248, 0.25));
+}
+
+@keyframes floatIcon {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+/* --- TEMPERATURA CON EFFETTO SHIMMER --- */
+.temp {
+  background: linear-gradient(90deg,
+      var(--text) 0%,
+      var(--accent) 25%,
+      #ffffff 50%,
+      var(--accent) 75%,
+      var(--text) 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmerTemp 5s linear infinite;
+}
+
+@keyframes shimmerTemp {
+  to {
+    background-position: -220% center;
+  }
+}
+
+/* --- INGRESSO A CASCATA DELLE CARD FORECAST --- */
+.forecast-card {
+  animation: riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.forecast-card:nth-child(1) { animation-delay: 0.03s; }
+.forecast-card:nth-child(2) { animation-delay: 0.06s; }
+.forecast-card:nth-child(3) { animation-delay: 0.09s; }
+.forecast-card:nth-child(4) { animation-delay: 0.12s; }
+.forecast-card:nth-child(5) { animation-delay: 0.15s; }
+.forecast-card:nth-child(6) { animation-delay: 0.18s; }
+.forecast-card:nth-child(7) { animation-delay: 0.21s; }
+.forecast-card:nth-child(n+8) { animation-delay: 0.24s; }
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* --- RISPETTO DELLE PREFERENZE DI ACCESSIBILITÀ --- */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .weather img,
+  .temp,
+  .forecast-card {
+    animation: none !important;
+  }
+}
+
+/* --- AURORA ROTANTE SULLO SFONDO --- */
+.app::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(from 0deg, #38bdf8, #a78bfa, #34d399, #38bdf8);
+  filter: blur(120px);
+  opacity: 0.16;
+  z-index: 0;
+  animation: auroraSpin 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes auroraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- CIELO STELLATO PULSANTE --- */
+.app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+    radial-gradient(2px 2px at 65% 15%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 80% 60%, #fff, transparent),
+    radial-gradient(1px 1px at 40% 80%, #fff, transparent),
+    radial-gradient(2px 2px at 90% 40%, #fff, transparent),
+    radial-gradient(1px 1px at 10% 70%, #fff, transparent);
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  z-index: 0;
+  animation: twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* --- SOTTOLINEATURA ANIMATA DEL TITOLO --- */
+.title::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 50px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #a78bfa);
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  animation: drawUnderline 0.8s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes drawUnderline {
+  to {
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app::before,
+  .app::after,
+  .title::after {
+    animation: none !important;
   }
 }
